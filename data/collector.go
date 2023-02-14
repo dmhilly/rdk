@@ -11,7 +11,7 @@ import (
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
-	"go.viam.com/api/app/datasync/v1"
+	v1 "go.viam.com/api/app/datasync/v1"
 	"go.viam.com/utils"
 	"go.viam.com/utils/protoutils"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -168,8 +168,10 @@ func (c *collector) tickerBasedCapture() {
 }
 
 func (c *collector) getAndPushNextReading() {
+	c.logger.Debug("in getAndPushNextReading")
 	timeRequested := timestamppb.New(time.Now().UTC())
 	reading, err := c.capturer.Capture(c.cancelCtx, c.params)
+	c.logger.Debug("capture method finished")
 	timeReceived := timestamppb.New(time.Now().UTC())
 	if err != nil {
 		if errors.Is(err, context.Canceled) {

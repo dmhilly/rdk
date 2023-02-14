@@ -3,6 +3,7 @@ package camera
 import (
 	"bytes"
 	"context"
+	"fmt"
 
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
@@ -78,10 +79,22 @@ func newReadImageCollector(resource interface{}, params data.CollectorParams) (d
 	}
 
 	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any) (interface{}, error) {
+		defer func() {
+			fmt.Println("here in defer")
+			if err := recover(); err != nil {
+				fmt.Println("panic occurred:", err)
+			}
+		}()
+
 		_, span := trace.StartSpan(ctx, "camera::data::collector::CaptureFunc::ReadImage")
 		defer span.End()
 
+		fmt.Println("//////// started span ////////////")
+		// TODO: Give this context a timeout and see if this returns. I thought originally
+		// it was panicking but given that the defer print statement never appears, I think
+		// this is just never returning.
 		img, release, err := ReadImage(ctx, camera)
+		fmt.Println("~~~~~~~~~~~~read image~~~~~~~~~~~~~")
 		if err != nil {
 			return nil, data.FailedToReadErr(params.ComponentName, readImage.String(), err)
 		}

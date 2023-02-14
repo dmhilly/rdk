@@ -52,7 +52,6 @@ code-coverage-results.md
 # act
 .secrets
 
-/data/
 out/
 .idea/*
 bin/
