@@ -163,8 +163,6 @@ func (svc *builtIn) Close(_ context.Context) error {
 }
 
 func (svc *builtIn) closeCollectors() {
-
-	svc.logger.Info("closing collectors !!")
 	wg := sync.WaitGroup{}
 	for md, collector := range svc.collectors {
 		currCollector := collector

@@ -3,7 +3,8 @@ package camera
 import (
 	"bytes"
 	"context"
-	"fmt"
+	"image"
+	"time"
 
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
@@ -79,28 +80,38 @@ func newReadImageCollector(resource interface{}, params data.CollectorParams) (d
 	}
 
 	cFunc := data.CaptureFunc(func(ctx context.Context, _ map[string]*anypb.Any) (interface{}, error) {
-		defer func() {
-			fmt.Println("here in defer")
-			if err := recover(); err != nil {
-				fmt.Println("panic occurred:", err)
-			}
-		}()
-
 		_, span := trace.StartSpan(ctx, "camera::data::collector::CaptureFunc::ReadImage")
 		defer span.End()
 
-		fmt.Println("//////// started span ////////////")
-		// TODO: Give this context a timeout and see if this returns. I thought originally
-		// it was panicking but given that the defer print statement never appears, I think
-		// this is just never returning.
-		img, release, err := ReadImage(ctx, camera)
-		fmt.Println("~~~~~~~~~~~~read image~~~~~~~~~~~~~")
-		if err != nil {
+		// Read image from the source to capture the image. This can block indefinitely so
+		// we time out after 10 seconds if no image is available.
+		type readImageRes struct {
+			img     image.Image
+			release func()
+			err     error
+		}
+		ch := make(chan readImageRes, 1)
+
+		ctxWithTimeout, cancel := context.WithTimeout(ctx, 10*time.Second)
+		defer cancel()
+		go func() {
+			img, release, err := ReadImage(ctxWithTimeout, camera)
+			ch <- readImageRes{img, release, err}
+		}()
+
+		var res readImageRes
+		select {
+		case res = <-ch:
+		case <-ctxWithTimeout.Done():
+			return nil, data.FailedToReadErr(params.ComponentName, readImage.String(), errors.New("ReadImage request timed out"))
+		}
+
+		if res.err != nil {
 			return nil, data.FailedToReadErr(params.ComponentName, readImage.String(), err)
 		}
 		defer func() {
-			if release != nil {
-				release()
+			if res.release != nil {
+				res.release()
 			}
 		}()
 
@@ -109,7 +120,7 @@ func newReadImageCollector(resource interface{}, params data.CollectorParams) (d
 			return nil, err
 		}
 
-		outBytes, err := rimage.EncodeImage(ctx, img, mimeStr.Value)
+		outBytes, err := rimage.EncodeImage(ctx, res.img, mimeStr.Value)
 		if err != nil {
 			return nil, err
 		}

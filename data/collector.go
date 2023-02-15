@@ -130,7 +130,7 @@ func (c *collector) sleepBasedCapture() {
 			captureWorkers.Add(1)
 			utils.PanicCapturingGo(func() {
 				defer captureWorkers.Done()
-				c.getAndPushNextReading()
+				c.getAndPushNextReading(c.cancelCtx)
 			})
 		}
 		next = next.Add(c.interval)
@@ -161,17 +161,15 @@ func (c *collector) tickerBasedCapture() {
 			captureWorkers.Add(1)
 			utils.PanicCapturingGo(func() {
 				defer captureWorkers.Done()
-				c.getAndPushNextReading()
+				c.getAndPushNextReading(c.cancelCtx)
 			})
 		}
 	}
 }
 
-func (c *collector) getAndPushNextReading() {
-	c.logger.Debug("in getAndPushNextReading")
+func (c *collector) getAndPushNextReading(ctx context.Context) {
 	timeRequested := timestamppb.New(time.Now().UTC())
-	reading, err := c.capturer.Capture(c.cancelCtx, c.params)
-	c.logger.Debug("capture method finished")
+	reading, err := c.capturer.Capture(ctx, c.params)
 	timeReceived := timestamppb.New(time.Now().UTC())
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
@@ -216,7 +214,7 @@ func (c *collector) getAndPushNextReading() {
 	select {
 	// If c.queue is full, c.queue <- a can block indefinitely. This additional select block allows cancel to
 	// still work when this happens.
-	case <-c.cancelCtx.Done():
+	case <-ctx.Done():
 		return
 	case c.queue <- &msg:
 		return
