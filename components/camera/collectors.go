@@ -103,7 +103,7 @@ func newReadImageCollector(resource interface{}, params data.CollectorParams) (d
 		select {
 		case res = <-ch:
 		case <-ctxWithTimeout.Done():
-			return nil, data.FailedToReadErr(params.ComponentName, readImage.String(), errors.New("ReadImage request timed out"))
+			return nil, data.FailedToReadErr(params.ComponentName, readImage.String(), errors.New("request timed out"))
 		}
 
 		if res.err != nil {
