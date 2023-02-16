@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/pkg/errors"
@@ -69,55 +68,55 @@ func (c *AppClient) BinaryData(dst string, filter *datapb.Filter, parallelDownlo
 		}
 	}()
 
-	// In parallel, read from ids and download the binary for each id in batches of defaultParallelDownloads.
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		var nextID string
-		var done bool
-		numFilesDownloaded := &atomic.Int32{}
-		downloadWG := sync.WaitGroup{}
-		for {
-			for i := uint(0); i < parallelDownloads; i++ {
-				if err := ctx.Err(); err != nil {
-					errs <- err
-					cancel()
-					done = true
-					break
-				}
-
-				nextID = <-ids
-
-				// If nextID is zero value, the channel has been closed and there are no more IDs to be read.
-				if nextID == "" {
-					done = true
-					break
-				}
-
-				downloadWG.Add(1)
-				go func(id string) {
-					defer downloadWG.Done()
-					err := downloadBinary(ctx, c.dataClient, dst, id)
-					if err != nil {
+	/*	// In parallel, read from ids and download the binary for each id in batches of defaultParallelDownloads.
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			var nextID string
+			var done bool
+			numFilesDownloaded := &atomic.Int32{}
+			downloadWG := sync.WaitGroup{}
+			for {
+				for i := uint(0); i < parallelDownloads; i++ {
+					if err := ctx.Err(); err != nil {
 						errs <- err
 						cancel()
 						done = true
+						break
 					}
-					numFilesDownloaded.Add(1)
-					if numFilesDownloaded.Load()%logEveryN == 0 {
-						fmt.Fprintf(c.c.App.Writer, "downloaded %d files\n", numFilesDownloaded.Load())
+
+					nextID = <-ids
+
+					// If nextID is zero value, the channel has been closed and there are no more IDs to be read.
+					if nextID == "" {
+						done = true
+						break
 					}
-				}(nextID)
+
+					downloadWG.Add(1)
+					go func(id string) {
+						defer downloadWG.Done()
+						err := downloadBinary(ctx, c.dataClient, dst, id)
+						if err != nil {
+							errs <- err
+							cancel()
+							done = true
+						}
+						numFilesDownloaded.Add(1)
+						if numFilesDownloaded.Load()%logEveryN == 0 {
+							fmt.Fprintf(c.c.App.Writer, "downloaded %d files\n", numFilesDownloaded.Load())
+						}
+					}(nextID)
+				}
+				downloadWG.Wait()
+				if done {
+					break
+				}
 			}
-			downloadWG.Wait()
-			if done {
-				break
+			if numFilesDownloaded.Load()%logEveryN != 0 {
+				fmt.Fprintf(c.c.App.Writer, "downloaded %d files to %s\n", numFilesDownloaded.Load(), dst)
 			}
-		}
-		if numFilesDownloaded.Load()%logEveryN != 0 {
-			fmt.Fprintf(c.c.App.Writer, "downloaded %d files to %s\n", numFilesDownloaded.Load(), dst)
-		}
-	}()
+		}()*/
 	wg.Wait()
 	close(errs)
 
