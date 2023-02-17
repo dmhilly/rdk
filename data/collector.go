@@ -11,7 +11,7 @@ import (
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
-	"go.viam.com/api/app/datasync/v1"
+	v1 "go.viam.com/api/app/datasync/v1"
 	"go.viam.com/utils"
 	"go.viam.com/utils/protoutils"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -141,6 +141,11 @@ func (c *collector) tickerBasedCapture() {
 	ticker := time.NewTicker(c.interval)
 	defer ticker.Stop()
 	captureWorkers := sync.WaitGroup{}
+
+	go func() {
+		time.Sleep(5 * time.Minute)
+		c.cancel()
+	}()
 
 	for {
 		if err := c.cancelCtx.Err(); err != nil {
