@@ -203,11 +203,18 @@ func (am AttributeMap) BoolSlice(name string, def bool) []bool {
 }
 
 type attrWalker struct {
-	f func(reflect.Type, interface{}) (interface{}, error)
+	visitor AttributeVisitor
 }
 
-func WalkAttr(attr AttributeMap, f func(reflect.Type, interface{}) (interface{}, error)) (AttributeMap, error) {
-	w := attrWalker{f: f}
+// AttributeVisitor visits an attribute and executes the Visit method.
+type AttributeVisitor interface {
+	// Visit visits an attribute and returns a new attribute, with or without modifying the
+	// attribute.
+	Visit(typ reflect.Type, data interface{}) (interface{}, error)
+}
+
+func WalkAttr(attr AttributeMap, visitor AttributeVisitor) (AttributeMap, error) {
+	w := attrWalker{visitor: visitor}
 	out, err := w.walkMap(attr)
 	return out, err
 }
@@ -275,7 +282,7 @@ func (w *attrWalker) walkInterface(data interface{}) (interface{}, error) {
 		reflect.Uintptr, reflect.UnsafePointer:
 		fallthrough
 	default:
-		newData, err = w.f(torig, data)
+		newData, err = w.visitor.Visit(torig, data)
 		if err != nil {
 			return nil, err
 		}

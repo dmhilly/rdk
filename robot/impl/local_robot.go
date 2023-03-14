@@ -6,6 +6,8 @@ package robotimpl
 
 import (
 	"context"
+	"path"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -897,7 +899,7 @@ func dialRobotClient(
 // a best effort to remove no longer in use parts, but if it fails to do so, they could
 // possibly leak resources.
 func (r *localRobot) Reconfigure(ctx context.Context, newConfig *config.Config) {
-	var allErrs error
+	var allerrs error
 
 	newConfig = r.updateDefaultServiceNames(newConfig)
 	diff, err := config.DiffConfigs(*r.config, *newConfig, r.revealSensitiveConfigDiffs)
@@ -919,6 +921,8 @@ func (r *localRobot) Reconfigure(ctx context.Context, newConfig *config.Config) 
 	if err != nil {
 		allErrs = multierr.Combine(allErrs, err)
 	}
+
+	_ = r.replacePackageReferencesWithPaths(diff)
 
 	// First we remove resources and their children that are not in the graph.
 	filtered, err := r.manager.FilterFromConfig(ctx, diff.Removed, r.logger)
@@ -972,6 +976,54 @@ func (r *localRobot) Reconfigure(ctx context.Context, newConfig *config.Config) 
 	if allErrs != nil {
 		r.logger.Errorw("the following errors were gathered during reconfiguration", "errors", allErrs)
 	}
+}
+
+func (r *localRobot) replacePackageReferencesWithPaths(diff *config.Diff) error {
+	var allErrs error
+	for _, c := range diff.Added.Components {
+		// Replace all package references with the actual path containing the package
+		// on the robot.
+		var err error
+		c.Attributes, err = config.WalkAttr(c.Attributes, NewPackagePathVisitor(r.packageManager))
+		if err != nil {
+			allErrs = multierr.Combine(allErrs, err)
+			continue
+		}
+	}
+}
+
+type PackagePathVisitor struct {
+	packageManager packages.Manager
+}
+
+func NewPackagePathVisitor(packageManager packages.Manager) *PackagePathVisitor {
+	return &PackagePathVisitor{
+		packageManager: packageManager,
+	}
+}
+
+func (v *PackagePathVisitor) Visit(t reflect.Type, data interface{}) (interface{}, error) {
+	if t.Kind() == reflect.String {
+		ref := config.GetPackageReference(data.(string))
+		if ref != nil {
+			packagePath, err := v.packageManager.PackagePath(ref.Package)
+			if err != nil {
+				return nil, err
+			}
+			data = path.Join(packagePath, ref.PathInPackage)
+		}
+	} else if t.Kind() == reflect.Ptr && t.Elem().Kind() == reflect.String {
+		ref := config.GetPackageReference(reflect.ValueOf(data).Elem().Interface().(string))
+		if ref != nil {
+			packagePath, err := v.packageManager.PackagePath(ref.Package)
+			if err != nil {
+				return nil, err
+			}
+			data = path.Join(packagePath, ref.PathInPackage)
+		}
+		return &data, nil
+	}
+	return data, nil
 }
 
 // checkMaxInstance checks to see if the local robot has reached the maximum number of a specific service type that are local.

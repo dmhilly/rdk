@@ -777,7 +777,7 @@ const DefaultPackageVersionValue = "latest"
 type PackageConfig struct {
 	// Name is the local name of the package on the RDK. Must be unique across Packages. Must not be empty.
 	Name string `json:"name"`
-	// Package is the unqiue package name hosted by a remote PackageService. Must not be empty.
+	// Package is the unique package name hosted by a remote PackageService. Must not be empty.
 	Package string `json:"package"`
 	// Version of the package ID hosted by a remote PackageService. If not specified "latest" is assumed.
 	Version string `json:"version,omitempty"`
