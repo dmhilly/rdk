@@ -27,6 +27,7 @@ func (v *PackagePathVisitor) Visit(t reflect.Type, data interface{}) (interface{
 			}
 			data = path.Join(packagePath, ref.PathInPackage)
 		}
+		return data, nil
 	} else if t.Kind() == reflect.Ptr && t.Elem().Kind() == reflect.String {
 		ref := config.GetPackageReference(reflect.ValueOf(data).Elem().Interface().(string))
 		if ref != nil {

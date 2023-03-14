@@ -800,8 +800,8 @@ func (p *PackageConfig) Validate(path string) error {
 	return nil
 }
 
-// GetPackageReference a PackageReference if the given path has a Package reference eg. ${packages.some-package}/path.
-// Returns nil if no package reference is found.
+// GetPackageReference gets a PackageReference if the given path has a Package reference eg.
+// ${packages.some-package}/path. Returns nil if no package reference is found.
 func GetPackageReference(path string) *PackageReference {
 	// return early before regex match
 	if len(path) == 0 || path[0] != '$' {

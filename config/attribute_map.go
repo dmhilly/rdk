@@ -213,9 +213,9 @@ type AttributeVisitor interface {
 	Visit(typ reflect.Type, data interface{}) (interface{}, error)
 }
 
-func WalkAttr(attr AttributeMap, visitor AttributeVisitor) (AttributeMap, error) {
+func WalkAttr(attr interface{}, visitor AttributeVisitor) (interface{}, error) {
 	w := attrWalker{visitor: visitor}
-	out, err := w.walkMap(attr)
+	out, err := w.walkInterface(attr)
 	return out, err
 }
 
