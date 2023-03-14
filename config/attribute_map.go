@@ -216,6 +216,9 @@ type AttributeVisitor interface {
 func WalkAttr(attr interface{}, visitor AttributeVisitor) (interface{}, error) {
 	w := attrWalker{visitor: visitor}
 	out, err := w.walkInterface(attr)
+	if err != nil {
+		return out, err
+	}
 	return out, err
 }
 

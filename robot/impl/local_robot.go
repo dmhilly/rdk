@@ -6,7 +6,6 @@ package robotimpl
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -983,20 +982,18 @@ func (r *localRobot) Reconfigure(ctx context.Context, newConfig *config.Config) 
 func (r *localRobot) replacePackageReferencesWithPaths(diff *config.Diff) error {
 	var allErrs error
 	// TODO: consider for components and other things containing attributes?
-	for _, s := range diff.Added.Services {
-		fmt.Println("here, service name ", s.Name)
+	for i, s := range diff.Added.Services {
 		// Replace all package references with the actual path containing the package
 		// on the robot.
 		newAttrs, err := config.WalkAttr(s.ConvertedAttributes, packages.NewPackagePathVisitor(r.packageManager))
 		if err != nil {
-			fmt.Println("error ", err)
 			allErrs = multierr.Combine(allErrs, err)
 			continue
 		}
-		s.ConvertedAttributes = &newAttrs
-		fmt.Println("converted: ", newAttrs)
+
+		s.ConvertedAttributes = newAttrs
+		diff.Added.Services[i] = s
 	}
-	fmt.Println(diff.Added.Services[1].ConvertedAttributes)
 
 	return allErrs
 }
