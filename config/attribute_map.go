@@ -287,6 +287,7 @@ func (w *attrWalker) walkInterface(data interface{}) (interface{}, error) {
 		fallthrough
 	default:
 		newData, err = w.visitor.Visit(torig, data)
+		fmt.Println("new data", newData)
 		if err != nil {
 			return nil, err
 		}
@@ -340,11 +341,18 @@ func (w *attrWalker) walkStruct(data interface{}) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
+		fmt.Println(newField)
 
-		// If the field's value is a pointer, set the value it points to to the new field
+		/*// If the field's value is a pointer, set the value it points to to the new field
 		// returned by walking this field.
 		if reflect.TypeOf(field).Kind() == reflect.Ptr {
 			fieldValue.Set(reflect.ValueOf(newField))
+		}*/
+		switch reflect.TypeOf(field).Kind() {
+		case reflect.Ptr, reflect.Map, reflect.Slice, reflect.Chan, reflect.Struct:
+			fmt.Println(reflect.TypeOf(field).Kind())
+			value.Field(i).Set(reflect.ValueOf(newField))
+		default:
 		}
 	}
 	return data, nil
