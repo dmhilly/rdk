@@ -330,7 +330,6 @@ func (w *attrWalker) walkStruct(data interface{}) (interface{}, error) {
 
 	for i := 0; i < t.NumField(); i++ {
 		field := value.Field(i).Interface()
-		fmt.Println("field", field)
 
 		fieldValue := reflect.ValueOf(field)
 		if isEmptyValue(fieldValue) {
@@ -341,21 +340,12 @@ func (w *attrWalker) walkStruct(data interface{}) (interface{}, error) {
 		if err != nil {
 			return nil, err
 		}
-		fmt.Println(newField)
 
-		/*// If the field's value is a pointer, set the value it points to to the new field
-		// returned by walking this field.
 		if reflect.TypeOf(field).Kind() == reflect.Ptr {
-			fieldValue.Set(reflect.ValueOf(newField))
-		}*/
-		switch reflect.TypeOf(field).Kind() {
-		case reflect.Ptr, reflect.Map, reflect.Slice, reflect.Chan, reflect.Struct:
-			fmt.Println(reflect.TypeOf(field).Kind())
 			value.Field(i).Set(reflect.ValueOf(newField))
-		default:
 		}
 	}
-	return data, nil
+	return value.Interface(), nil
 }
 
 func isEmptyValue(v reflect.Value) bool {

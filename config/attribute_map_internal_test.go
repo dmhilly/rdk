@@ -14,6 +14,12 @@ import (
 var modelPath string = "${packages.i_am_a_model}/mobilenet_v1_1.0_224_quant.tflite"
 var labelPath string = "${packages.i_am_a_model}/lorem.txt"
 
+type MyStruct struct {
+	A *int
+	B *string
+	C *map[int]string
+}
+
 func TestAttributeWalker(t *testing.T) {
 	visionAttributes := &vision.Attributes{
 		ModelRegistry: []vision.VisModelConfig{
@@ -36,4 +42,20 @@ func TestAttributeWalker(t *testing.T) {
 
 	fmt.Println(visionAttributes)
 	fmt.Println(newAttr)
+
+	i := 17
+	s := &MyStruct{
+		A: &i,
+		B: &modelPath,
+		C: &map[int]string{
+			1: labelPath,
+			4: labelPath,
+			7: modelPath,
+		},
+	}
+
+	newAttr, err = config.WalkAttr(s, packages.NewPackagePathVisitor(packages.NewNoopManager()))
+	if err != nil {
+		t.Fatal(err)
+	}
 }
