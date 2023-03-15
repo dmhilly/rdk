@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/pkg/errors"
@@ -319,31 +320,34 @@ func (w *attrWalker) walkStruct(data interface{}) (interface{}, error) {
 	if t.Kind() != reflect.Struct {
 		return nil, errors.Errorf("data of type %T is not a struct", data)
 	}
-	res := map[string]interface{}{}
+
 	value := reflect.ValueOf(data)
 	if value.Kind() == reflect.Ptr && value.IsNil() {
-		return res, nil
+		return nil, nil
 	}
-	value = reflect.Indirect(value)
+	value = reflect.Indirect(value) // Get the value that this points to if it's a pointer
+
 	for i := 0; i < t.NumField(); i++ {
-		sField := t.Field(i)
-		key := sField.Name
-
 		field := value.Field(i).Interface()
+		fmt.Println("field", field)
 
-		if isEmptyValue(reflect.ValueOf(field)) {
-			res[key] = data
+		fieldValue := reflect.ValueOf(field)
+		if isEmptyValue(fieldValue) {
 			continue
 		}
 
-		data, err := w.walkInterface(field)
+		newField, err := w.walkInterface(field)
 		if err != nil {
 			return nil, err
 		}
 
-		res[key] = data
+		// If the field's value is a pointer, set the value it points to to the new field
+		// returned by walking this field.
+		if reflect.TypeOf(field).Kind() == reflect.Ptr {
+			fieldValue.Set(reflect.ValueOf(newField))
+		}
 	}
-	return res, nil
+	return data, nil
 }
 
 func isEmptyValue(v reflect.Value) bool {
