@@ -1,4 +1,4 @@
-package packages
+package config
 
 import (
 	"path"
@@ -7,7 +7,7 @@ import (
 	"go.viam.com/rdk/config"
 )
 
-type PackagePathVisitor struct {
+type packagePathVisitor struct {
 	packageManager Manager
 }
 

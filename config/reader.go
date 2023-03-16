@@ -547,12 +547,20 @@ func processConfig(unprocessedConfig *Config, fromCloud bool) (*Config, error) {
 		return nil, errors.Wrap(err, "error copying config")
 	}
 
-	// Copy does not presve ConfigFilePath and we need to pass it along manually
+	// Copy does not preserve ConfigFilePath and we need to pass it along manually
 	cfg.ConfigFilePath = unprocessedConfig.ConfigFilePath
 
-	// TODO: construct new package manager type and resolve the paths.
+	packageNameProvider := NewNoDownloadManager(cfg.PackagePath)
 
 	for idx, c := range cfg.Components {
+		// Replace package references in the component attributes.
+		newAttrs, err := WalkAttr(c.Attributes, NewPackagePathVisitor(packageNameProvider))
+		if err != nil {
+			return nil, errors.Wrapf(err, "error replacing package references in attributes for (%s %s)", c.Type, c.Model)
+		}
+
+		// Convert the component attributes into the custom attribute type for each
+		// component.
 		cType := resource.NewSubtype(c.Namespace, "component", c.Type)
 		conv := findMapConverter(cType, c.Model)
 		// inner attributes may have their own converters
@@ -580,15 +588,23 @@ func processConfig(unprocessedConfig *Config, fromCloud bool) (*Config, error) {
 		cfg.Components[idx].ConvertedAttributes = converted
 	}
 
-	for idx, c := range cfg.Services {
-		conv := findServiceMapConverter(resource.NewSubtype(c.Namespace, resource.ResourceTypeService, c.Type), c.Model)
+	for idx, s := range cfg.Services {
+		// Replace package references in the service attributes.
+		newAttrs, err := WalkAttr(s.Attributes, NewPackagePathVisitor(packageNameProvider))
+		if err != nil {
+			return nil, errors.Wrapf(err, "error replacing package references in attributes for (%s %s)", c.Type, c.Model)
+		}
+
+		// Convert the service attributes into the custom attribute type for each
+		// service.
+		conv := findServiceMapConverter(resource.NewSubtype(s.Namespace, resource.ResourceTypeService, s.Type), s.Model)
 		if conv == nil {
 			continue
 		}
 
-		converted, err := conv(c.Attributes)
+		converted, err := conv(s.Attributes)
 		if err != nil {
-			return nil, errors.Wrapf(err, "error converting attributes for %s", c.Type)
+			return nil, errors.Wrapf(err, "error converting attributes for %s", s.Type)
 		}
 		cfg.Services[idx].Attributes = nil
 		cfg.Services[idx].ConvertedAttributes = converted

@@ -1,4 +1,4 @@
-package packages
+package config
 
 import (
 	"context"
@@ -15,8 +15,10 @@ var (
 	_ ManagerSyncer = (*noDownloadManager)(nil)
 )
 
-func NewNoDownloadManager() ManagerSyncer {
-	return &noDownloadManager{}
+func NewNoDownloadManager(packagesDir string) ManagerSyncer {
+	return &noDownloadManager{
+		packagesDir: packagesDir,
+	}
 }
 
 func (m *noDownloadManager) PackagePath(name PackageName) (string, error) {
@@ -24,7 +26,7 @@ func (m *noDownloadManager) PackagePath(name PackageName) (string, error) {
 }
 
 func (m *noDownloadManager) RefPath(refPath string) (string, error) {
-	// TODO: update this and actually use it
+	// TODO: update this and actually use it?
 	return refPath, nil
 }
 
