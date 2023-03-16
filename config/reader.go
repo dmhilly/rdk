@@ -550,6 +550,8 @@ func processConfig(unprocessedConfig *Config, fromCloud bool) (*Config, error) {
 	// Copy does not presve ConfigFilePath and we need to pass it along manually
 	cfg.ConfigFilePath = unprocessedConfig.ConfigFilePath
 
+	// TODO: construct new package manager type and resolve the paths.
+
 	for idx, c := range cfg.Components {
 		cType := resource.NewSubtype(c.Namespace, "component", c.Type)
 		conv := findMapConverter(cType, c.Model)

@@ -483,7 +483,11 @@ func (m *cloudManager) localDataPath(p config.PackageConfig) string {
 }
 
 func (m *cloudManager) localNamedPath(p config.PackageConfig) string {
-	return filepath.Join(m.packagesDir, p.Name)
+	return localNamedPath(p.Name, m.packagesDir)
+}
+
+func localNamedPath(packageName string, packagesDir string) string {
+	return filepath.Join(packagesDir, p.Name)
 }
 
 func getGoogleHash(headers http.Header, hashType string) string {

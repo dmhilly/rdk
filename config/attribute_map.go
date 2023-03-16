@@ -213,13 +213,9 @@ type AttributeVisitor interface {
 	Visit(typ reflect.Type, data interface{}) (interface{}, error)
 }
 
-func WalkAttr(attr interface{}, visitor AttributeVisitor) (interface{}, error) {
+func WalkAttr(attr AttributeMap, visitor AttributeVisitor) (interface{}, error) {
 	w := attrWalker{visitor: visitor}
-	out, err := w.walkInterface(attr)
-	if err != nil {
-		return out, err
-	}
-	return out, err
+	return w.walkMap(attr)
 }
 
 func (w *attrWalker) walkMap(data interface{}) (map[string]interface{}, error) {
