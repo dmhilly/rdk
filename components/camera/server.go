@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/edaniels/golog"
 	"github.com/edaniels/gostream"
@@ -156,11 +155,17 @@ func (s *subtypeServer) GetPointCloud(
 		return nil, err
 	}
 
-	err = grpc.SendHeader(ctx, metadata.MD{
-		TimestampMetadataKey: []string{fmt.Sprintf("%v", time.Now())},
-	})
-	if err != nil {
-		return nil, err
+	if pcdSourceWithTS, ok := camera.(PointCloudSourceWithTimestamp); ok {
+		time, err := pcdSourceWithTS.NextPointCloudTimestamp(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := grpc.SendHeader(ctx, metadata.MD{
+			TimestampMetadataKey: []string{fmt.Sprintf("%v", time)},
+		}); err != nil {
+			return nil, err
+		}
 	}
 
 	return &pb.GetPointCloudResponse{

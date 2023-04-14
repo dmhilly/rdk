@@ -5,6 +5,7 @@ import (
 	"context"
 	"image"
 	"sync"
+	"time"
 
 	"github.com/edaniels/golog"
 	"github.com/edaniels/gostream"
@@ -107,6 +108,11 @@ func ReadImage(ctx context.Context, src gostream.VideoSource) (image.Image, func
 
 type projectorProvider interface {
 	Projector(ctx context.Context) (transform.Projector, error)
+}
+
+type PointCloudSourceWithTimestamp interface {
+	PointCloudSource
+	NextPointCloudTimestamp(ctx context.Context) (time.Time, error)
 }
 
 // A PointCloudSource is a source that can generate pointclouds.

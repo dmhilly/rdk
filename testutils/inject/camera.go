@@ -2,6 +2,7 @@ package inject
 
 import (
 	"context"
+	"time"
 
 	"github.com/edaniels/gostream"
 	"github.com/pkg/errors"
@@ -24,6 +25,10 @@ type Camera struct {
 	ProjectorFunc      func(ctx context.Context) (transform.Projector, error)
 	PropertiesFunc     func(ctx context.Context) (camera.Properties, error)
 	CloseFunc          func(ctx context.Context) error
+}
+
+func (c *Camera) NextPointCloudTimestamp(ctx context.Context) (time.Time, error) {
+	return time.Now(), nil
 }
 
 // NextPointCloud calls the injected NextPointCloud or the real version.
