@@ -332,7 +332,14 @@ func TestClientDialerOption(t *testing.T) {
 	listener, err := net.Listen("tcp", "localhost:0")
 	test.That(t, err, test.ShouldBeNil)
 	gServer := grpc.NewServer()
+
 	injectCamera := &inject.Camera{}
+	pcA := pointcloud.New()
+	err = pcA.Set(pointcloud.NewVector(5, 5, 5), nil)
+	test.That(t, err, test.ShouldBeNil)
+	injectCamera.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
+		return pcA, nil
+	}
 
 	cameraSvc, err := subtype.New(map[resource.Name]interface{}{camera.Named(testCameraName): injectCamera})
 	test.That(t, err, test.ShouldBeNil)
@@ -351,6 +358,11 @@ func TestClientDialerOption(t *testing.T) {
 	test.That(t, err, test.ShouldBeNil)
 	client2 := camera.NewClientFromConn(ctx, conn2, testCameraName, logger)
 	test.That(t, td.NewConnections, test.ShouldEqual, 3)
+
+	pcB, err := client1.NextPointCloud(context.Background())
+	test.That(t, err, test.ShouldBeNil)
+	_, got := pcB.At(5, 5, 5)
+	test.That(t, got, test.ShouldBeTrue)
 
 	err = utils.TryClose(context.Background(), client1)
 	test.That(t, err, test.ShouldBeNil)

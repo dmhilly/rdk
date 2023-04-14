@@ -13,6 +13,8 @@ import (
 	pb "go.viam.com/api/component/camera/v1"
 	goutils "go.viam.com/utils"
 	"go.viam.com/utils/rpc"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/protoutils"
@@ -125,10 +127,16 @@ func (c *client) NextPointCloud(ctx context.Context) (pointcloud.PointCloud, err
 	defer span.End()
 
 	ctx, getPcdSpan := trace.StartSpan(ctx, "camera::client::NextPointCloud::GetPointCloud")
+	var header metadata.MD
 	resp, err := c.client.GetPointCloud(ctx, &pb.GetPointCloudRequest{
 		Name:     c.name,
 		MimeType: utils.MimeTypePCD,
-	})
+	},
+		grpc.Header(&header),
+	)
+
+	fmt.Println("timestamp metadata: ", header.Get(TimestampMetadataKey))
+
 	getPcdSpan.End()
 	if err != nil {
 		return nil, err

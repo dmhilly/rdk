@@ -3,6 +3,8 @@ package camera
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/edaniels/golog"
 	"github.com/edaniels/gostream"
@@ -11,6 +13,8 @@ import (
 	commonpb "go.viam.com/api/common/v1"
 	pb "go.viam.com/api/component/camera/v1"
 	"google.golang.org/genproto/googleapis/api/httpbody"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/protoutils"
@@ -152,11 +156,20 @@ func (s *subtypeServer) GetPointCloud(
 		return nil, err
 	}
 
+	err = grpc.SendHeader(ctx, metadata.MD{
+		TimestampMetadataKey: []string{fmt.Sprintf("%v", time.Now())},
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &pb.GetPointCloudResponse{
 		MimeType:   utils.MimeTypePCD,
 		PointCloud: buf.Bytes(),
 	}, nil
 }
+
+var TimestampMetadataKey = "viam-timestamp"
 
 func (s *subtypeServer) GetProperties(
 	ctx context.Context,
